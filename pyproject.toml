@@ -6,6 +6,9 @@ authors = ["Mykola Solodukha <mykola.soloduha@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8.4"
+aiogram = "^2.11.2"
+tortoise-orm = "^0.16.21"
+aerich = "^0.5.0"
 
 [tool.poetry.dev-dependencies]
 
