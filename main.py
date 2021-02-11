@@ -1,4 +1,5 @@
 # Imported from directory
+import asyncio
 import os
 
 import celery
@@ -22,6 +23,8 @@ from aiogram.dispatcher import Dispatcher, FSMContext
 # Time
 from datetime import datetime
 # from celery import Celery
+# from celery import
+
 # ORM
 from models import User
 from database import init
@@ -74,12 +77,10 @@ def set_message(time1, date1):
         current_time1 = now.strftime("%H:%M:%S")
         print(current_time)
         sleep(0.5)
+    return tasks.broadcast_message("async problem solved")
 
-    return tasks.broadcast_message("Fucking cowstils")
-
-
-# пробачтте мої гріхи але я комітну
-set_message("01:13:55", "11/02/2021")
-
+# when delay applied shows error
+set_message.delay("11:46:00", "11/02/2021")
+set_message.delay("11:46:10", "11/02/2021")
 if __name__ == '__main__':
     executor.start_polling(dp, on_startup=startup)
