@@ -34,10 +34,12 @@ async def send_message(user_id: int,
     from main import bot
 
     try:
-        await bot.send_message(user_id, text,
-                               reply_markup=InlineKeyboardMarkup().add(
-                                   *[InlineKeyboardButton(**button) for button in buttons]
-                               ) if buttons else None,
+        await bot.send_message(user_id, text, reply_markup=InlineKeyboardMarkup(
+            row_width=2,
+            resize_keyboard=True,
+            one_time_keyboard=True, ).add(
+            *[InlineKeyboardButton(**button) for button in buttons])
+        if buttons else None,
                                disable_notification=disable_notification)
         log.info(f"Sent message to target [ID:{user_id}]")
     except exceptions.BotBlocked:
@@ -85,7 +87,7 @@ async def broadcaster(text: str,
 
 @celery_app.task()
 def broadcast_message(text: str,
-                      buttons: Optional[list[dict[str, str]]] = None):
+                      buttons: Optional[list[dict[str, str]]] = None, *args):
     """
     Celery task used to broadcast new messages to users
 
