@@ -7,5 +7,6 @@ class States(StatesGroup):
 
     # Questionnaire states
     questionnaire = State()
-    maybach_place = State()
-    mountain_place = State()
+    questionnaire_floor = State()
+    questionnaire_room = State()
+    questionnaire_mate = State()

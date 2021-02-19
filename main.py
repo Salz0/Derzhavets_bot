@@ -2,7 +2,9 @@
 # Directory imports
 import asyncio
 import os
-from messages import MESSAGES
+
+import tasks
+from messages import MESSAGES, ROOMS, PETS_AND_FRIENDS
 
 # Keyboards
 import keyboards as kb
@@ -86,7 +88,7 @@ async def process_start_command(message: types.Message):
                                reply_markup=kb.Q_and_A_keyboard)
 
 
-@dp.message_handler(lambda message: message.text == MESSAGES["exit_Q"], state=States.writing_down_questions)
+@dp.message_handler(text=MESSAGES["exit_Q"], state=States.writing_down_questions)
 async def reply_hello(message: types.Message, state: FSMContext):
     await state.finish()
     return await message.reply(MESSAGES["Q_and_A_goodbye_message"])
@@ -94,8 +96,7 @@ async def reply_hello(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=ContentType.TEXT or ContentType.AUDIO, state=States.writing_down_questions)
 async def process_start_command(message: types.Message):
-    message_text = message.text
-    question = Questions(name=message.from_user.get_mention(), question=message_text)
+    question = Questions(name=message.from_user.get_mention(), question=message.text)
     await question.save()
     return await message.reply(MESSAGES["Q_and_A_confirmation_message"],
                                reply_markup=kb.Q_and_A_keyboard)
@@ -103,43 +104,150 @@ async def process_start_command(message: types.Message):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-# Questionnaire: (UNDER DEVELOPMENT)
+# Questionnaire:
 @dp.message_handler(commands=['questionnaire'], state=None)
-async def process_start_command(message: types.Message, state: FSMContext):
+async def questionnaire_start(message: types.Message, state: FSMContext):
     await States.questionnaire.set()
-    await message.reply(MESSAGES["questionnaire_start"],
-                        reply_markup=kb.place_kb)
+    await message.reply(MESSAGES["questionnaire_start"], reply_markup=kb.place_kb)
 
 
-# Branch1: (UNDER DEVELOPMENT)
-@dp.message_handler(lambda message: message.text == MESSAGES["place1"] or MESSAGES["place2"],
-                    state=States.questionnaire)
-async def reply_hello(message: types.Message, state: FSMContext):
-    choice = await Choice.get(id=message.from_user.id)
+# Branch1: CHOICE OF PLACE (UNDER DEV)
+@dp.message_handler(content_types=ContentType.ANY, state=States.questionnaire)
+async def questionnaire_place(message: types.Message, state: FSMContext):
     if message == MESSAGES["place1"]:
-        await States.maybach_place.set()
-        choice.place = MESSAGES["place1"]
+        choice = await Choice.get_or_create(id=message.from_user.id)
+        choice.place_name = MESSAGES["place1"]
+        await choice.save()
+        await message.reply(MESSAGES["questionnaire_floor"], reply_markup=kb.place1_floor_kb)
     else:
-        await States.mountain_place.set()
-        choice.place = MESSAGES["place2"]
+        choice = await Choice.get_or_create(id=message.from_user.id)
+        choice.place_name = MESSAGES["place2"]
+        await choice.save()
+        await message.reply(MESSAGES["questionnaire_floor"], reply_markup=kb.place2_floor_kb)
     choice.p_date = datetime.utcnow()
+
+    await States.questionnaire_floor.set()
+
+
+# Branch2: FLOOR
+@dp.message_handler(
+    text=MESSAGES["floor1"] or MESSAGES["floor2"] or MESSAGES["mountain_bot"] or MESSAGES["mountain_top"],
+    state=States.questionnaire_floor)
+async def questionnaire_floor(message: types.Message, state: FSMContext):
+    choice = await Choice.get(id=message.from_user.id)
+    if message == MESSAGES["floor1"]:
+        choice.floor = MESSAGES["floor1"]
+        await message.reply(MESSAGES["questionnaire_room"], reply_markup=kb.place1_floor1_kb)
+    elif message == MESSAGES["floor2"]:
+        choice.floor = MESSAGES["floor2"]
+        await message.reply(MESSAGES["questionnaire_room"], reply_markup=kb.place1_floor2_kb)
+    elif message == MESSAGES["mountain_bot"]:
+        choice.floor = MESSAGES["mountain_bot"]
+        await message.reply(MESSAGES["mountain_msg"], reply_markup=kb.place2_floor1_kb)
+    else:
+        choice.floor = MESSAGES["mountain_top"]
+        await message.reply(MESSAGES["mountain_msg"], reply_markup=kb.place2_floor2_kb)
+    choice.f_date = datetime.utcnow()
     await choice.save()
-    await message.reply(MESSAGES["questionnaire_floor"])
+    await States.questionnaire_room.set()
 
 
-# Branch2: (UNDER DEVELOPMENT)
-# @dp.message_handler(lambda msg: msg.text == kb.p_button2, state=States.questionnaire)
-# async def reply_hello(msg: types.Message, state: FSMContext):
-#     await state.finish()
-#     await msg.reply(MESSAGES['THE JOURNAL'])
+@dp.message_handler(lambda msg: msg.text in ROOMS, state=States.questionnaire_room)
+# MESSAGES["room1"] or MESSAGES["room2"] or MESSAGES["room3"] or MESSAGES["room4"] or
+#                          MESSAGES["room5"] or MESSAGES["room6"] or MESSAGES["river"] or MESSAGES["tree"] or
+#                          MESSAGES["igloo"] or MESSAGES["cave"]
+async def questionnaire_floor(message: types.Message, state: FSMContext):
+    choice = await Choice.get(id=message.from_user.id)
+    if message == ROOMS["room1"]:
+        choice.room = ROOMS["room1"]
+        await message.reply(MESSAGES["questionnaire_roommates"], reply_markup=kb.room1_kb)
+    elif message == ROOMS["room2"]:
+        choice.room = ROOMS["room2"]
+        await message.reply(MESSAGES["questionnaire_roommates"], reply_markup=kb.room2_kb)
+    elif message == ROOMS["room3"]:
+        choice.room = ROOMS["room3"]
+        await message.reply(MESSAGES["questionnaire_roommates"], reply_markup=kb.room3_kb)
+    elif message == ROOMS["room4"]:
+        choice.room = ROOMS["room4"]
+        await message.reply(MESSAGES["questionnaire_roommates"], reply_markup=kb.room4_kb)
+    elif message == ROOMS["room5"]:
+        choice.room = ROOMS["room5"]
+        await message.reply(MESSAGES["questionnaire_roommates"], reply_markup=kb.room5_kb)
+    elif message == ROOMS["room6"]:
+        choice.room = ROOMS["room6"]
+        await message.reply(MESSAGES["questionnaire_roommates"], reply_markup=kb.room6_kb)
+    elif message == ROOMS["river"]:
+        choice.room = ROOMS["river"]
+        await message.reply(MESSAGES["questionnaire_roommates"], reply_markup=kb.river_kb)
+    elif message == ROOMS["tree"]:
+        choice.room = ROOMS["tree"]
+        await message.reply(MESSAGES["questionnaire_roommates"], reply_markup=kb.tree_kb)
+    elif message == ROOMS["igloo"]:
+        choice.room = ROOMS["igloo"]
+        await message.reply(MESSAGES["questionnaire_roommates"], reply_markup=kb.igloo_kb)
+    else:
+        choice.room = ROOMS["cave"]
+        await message.reply(MESSAGES["questionnaire_roommates"], reply_markup=kb.cave_kb)
+
+    choice.r_date = datetime.utcnow()
+    await choice.save()
+    await States.questionnaire_mate.set()
+
+
+@dp.message_handler(lambda msg: msg.text in PETS_AND_FRIENDS, state=States.questionnaire_mate)
+async def questionnaire_friends(message: types.Message, state: FSMContext):
+    choice = await Choice.get(id=message.from_user.id)
+    if message == PETS_AND_FRIENDS["pet_river1"]:
+        choice.roommates = PETS_AND_FRIENDS["pet_river1"]
+    elif message == PETS_AND_FRIENDS["pet_river2"]:
+        choice.roommates = PETS_AND_FRIENDS["pet_river2"]
+    elif message == PETS_AND_FRIENDS["pet_tree1"]:
+        choice.roommates = PETS_AND_FRIENDS["pet_tree1"]
+    elif message == PETS_AND_FRIENDS["pet_tree2"]:
+        choice.roommates = PETS_AND_FRIENDS["pet_tree2"]
+    elif message == PETS_AND_FRIENDS["pet_igloo1"]:
+        choice.roommates = PETS_AND_FRIENDS["pet_igloo1"]
+    elif message == PETS_AND_FRIENDS["pet_igloo2"]:
+        choice.roommates = PETS_AND_FRIENDS["pet_igloo2"]
+    elif message == PETS_AND_FRIENDS["pet_cave1"]:
+        choice.roommates = PETS_AND_FRIENDS["pet_cave1"]
+    elif message == PETS_AND_FRIENDS["pet_cave2"]:
+        choice.roommates = PETS_AND_FRIENDS["pet_cave2"]
+    elif message == PETS_AND_FRIENDS["room1_friend1"]:
+        choice.roommates = PETS_AND_FRIENDS["room1_friend1"]
+    elif message == PETS_AND_FRIENDS["room1_friend2"]:
+        choice.roommates = PETS_AND_FRIENDS["room1_friend2"]
+    elif message == PETS_AND_FRIENDS["room2_friend1"]:
+        choice.roommates = PETS_AND_FRIENDS["room2_friend1"]
+    elif message == PETS_AND_FRIENDS["room2_friend2"]:
+        choice.roommates = PETS_AND_FRIENDS["room2_friend2"]
+    elif message == PETS_AND_FRIENDS["room3_friend1"]:
+        choice.roommates = PETS_AND_FRIENDS["room3_friend1"]
+    elif message == PETS_AND_FRIENDS["room3_friend2"]:
+        choice.roommates = PETS_AND_FRIENDS["room3_friend2"]
+    elif message == PETS_AND_FRIENDS["room4_friend1"]:
+        choice.roommates = PETS_AND_FRIENDS["room4_friend1"]
+    elif message == PETS_AND_FRIENDS["room4_friend2"]:
+        choice.roommates = PETS_AND_FRIENDS["room4_friend2"]
+    elif message == PETS_AND_FRIENDS["room5_friend1"]:
+        choice.roommates = PETS_AND_FRIENDS["room5_friend1"]
+    elif message == PETS_AND_FRIENDS["room5_friend2"]:
+        choice.roommates = PETS_AND_FRIENDS["room5_friend2"]
+    elif message == PETS_AND_FRIENDS["room6_friend1"]:
+        choice.roommates = PETS_AND_FRIENDS["room6_friend1"]
+    else:
+        choice.roommates = PETS_AND_FRIENDS["room6_friend2"]
+    choice.rm_date = datetime.utcnow()
+    await choice.save()
+    await state.finish()
+    await message.reply(MESSAGES["questionnaire_goodbye"])
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-"""
+
 # SAMPLE Of "broadcast_message"
-tasks.broadcast_message("ЛЕКЦІЯ ПОЧАЛАСЯ, УАЛІВЕЦЬ ВСТАВАЙ!",
-                          buttons=[{'text': "Я тут, не кричи", 'callback_data': "PRESENT09"}]).delay()
-"""
+# tasks.broadcast_message("ЛЕКЦІЯ ПОЧАЛАСЯ, УАЛІВЕЦЬ ВСТАВАЙ!",
+#                         buttons=[{'text': "Я тут, не кричи", 'callback_data': "PRESENT09"}]).delay()
 
 if __name__ == '__main__':
     executor.start_polling(dp, on_startup=startup)
