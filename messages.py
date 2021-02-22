@@ -77,7 +77,7 @@ Q_and_A_welcoming_message = text(emojize("Привіт, тут ти можеш �
                                          "Коли закінчиш, натисни клавішу 'Вийти'😉"))
 Q_and_A_confirmation_message = text(emojize("Записав!📃"))
 exit_Q = "Вийти"
-Q_and_A_goodbye_message = text(emojize("Я обов'язково передам твої повідомлення 🧭"))
+Q_and_A_goodbye_message = text(emojize("Дякую.\nЗадані питання будуть доставленими 🧭"))
 # TEMPLATE = text(emojize())
 
 MESSAGES = {

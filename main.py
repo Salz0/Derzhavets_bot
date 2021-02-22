@@ -47,14 +47,14 @@ async def startup(dispatcher):
 
 # HANDLER FOR CATCHING CALLBACK QUERIES (FROM INLINE KEYBOARDS):
 @dp.callback_query_handler(lambda callback_query: True, lambda c: c.data == 'PRESENT09')
-async def process_callback_button1(callback_query: types.CallbackQuery, state: FSMContext):
+async def process_callback_button1(callback_query: types.CallbackQuery):
     await bot.answer_callback_query(callback_query.id)
     user = await User.get(id=callback_query.from_user.id, name=callback_query.from_user.get_mention())
     user.presence = True
     await user.save()
     log.info(str("presence for {user} is set to 'True'").format(user=user))
     await bot.send_message(callback_query.from_user.id, MESSAGES["have_a_nice_lecture"])
-    await asyncio.sleep(3600)  # average length of lecture
+    await asyncio.sleep(3600)  # average length of lecture (customizable)
     user = await User.get(id=callback_query.from_user.id, name=callback_query.from_user.get_mention())
     user.presence = False
     await user.save()
@@ -81,59 +81,54 @@ async def process_start_command(message: types.Message):
 # ----------------------------------------------------------------------------------------------------------------------
 
 # USER Q&A:
-@dp.message_handler(commands=["Q&A"])
+@dp.message_handler(commands=["Q&A"], state=None)
 async def process_start_command(message: types.Message):
     await States.writing_down_questions.set()
-    return await message.reply(MESSAGES["Q_and_A_welcoming_message"],
-                               reply_markup=kb.Q_and_A_keyboard)
+    await message.reply(MESSAGES["Q_and_A_welcoming_message"], reply_markup=kb.Q_and_A_keyboard)
 
 
 @dp.message_handler(text=MESSAGES["exit_Q"], state=States.writing_down_questions)
 async def reply_hello(message: types.Message, state: FSMContext):
     await state.finish()
-    return await message.reply(MESSAGES["Q_and_A_goodbye_message"])
+    await message.reply(MESSAGES["Q_and_A_goodbye_message"])
 
 
 @dp.message_handler(content_types=ContentType.TEXT or ContentType.AUDIO, state=States.writing_down_questions)
 async def process_start_command(message: types.Message):
     question = Questions(name=message.from_user.get_mention(), question=message.text)
     await question.save()
-    return await message.reply(MESSAGES["Q_and_A_confirmation_message"],
-                               reply_markup=kb.Q_and_A_keyboard)
+    await message.reply(MESSAGES["Q_and_A_confirmation_message"], reply_markup=kb.Q_and_A_keyboard)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Questionnaire:
 @dp.message_handler(commands=['questionnaire'], state=None)
-async def questionnaire_start(message: types.Message, state: FSMContext):
+async def questionnaire_start(message: types.Message):
     await States.questionnaire.set()
+    choice = await Choice.get_or_create(id=message.from_user.id, Name=message.from_user.get_mention())
+    await choice[0].save()
     await message.reply(MESSAGES["questionnaire_start"], reply_markup=kb.place_kb)
 
 
-# Branch1: CHOICE OF PLACE (UNDER DEV)
+# Branch1: CHOICE OF PLACE
 @dp.message_handler(content_types=ContentType.ANY, state=States.questionnaire)
-async def questionnaire_place(message: types.Message, state: FSMContext):
+async def questionnaire_place(message: types.Message):
+    choice = await Choice.get(id=message.from_user.id)
     if message == MESSAGES["place1"]:
-        choice = await Choice.get_or_create(id=message.from_user.id)
         choice.place_name = MESSAGES["place1"]
-        await choice.save()
         await message.reply(MESSAGES["questionnaire_floor"], reply_markup=kb.place1_floor_kb)
     else:
-        choice = await Choice.get_or_create(id=message.from_user.id)
         choice.place_name = MESSAGES["place2"]
-        await choice.save()
         await message.reply(MESSAGES["questionnaire_floor"], reply_markup=kb.place2_floor_kb)
+    await choice.save()
     choice.p_date = datetime.utcnow()
-
     await States.questionnaire_floor.set()
 
 
 # Branch2: FLOOR
-@dp.message_handler(
-    text=MESSAGES["floor1"] or MESSAGES["floor2"] or MESSAGES["mountain_bot"] or MESSAGES["mountain_top"],
-    state=States.questionnaire_floor)
-async def questionnaire_floor(message: types.Message, state: FSMContext):
+@dp.message_handler(content_types=ContentType.ANY, state=States.questionnaire_floor)
+async def questionnaire_floor(message: types.Message):
     choice = await Choice.get(id=message.from_user.id)
     if message == MESSAGES["floor1"]:
         choice.floor = MESSAGES["floor1"]
@@ -152,11 +147,8 @@ async def questionnaire_floor(message: types.Message, state: FSMContext):
     await States.questionnaire_room.set()
 
 
-@dp.message_handler(lambda msg: msg.text in ROOMS, state=States.questionnaire_room)
-# MESSAGES["room1"] or MESSAGES["room2"] or MESSAGES["room3"] or MESSAGES["room4"] or
-#                          MESSAGES["room5"] or MESSAGES["room6"] or MESSAGES["river"] or MESSAGES["tree"] or
-#                          MESSAGES["igloo"] or MESSAGES["cave"]
-async def questionnaire_floor(message: types.Message, state: FSMContext):
+@dp.message_handler(content_types=ContentType.ANY, state=States.questionnaire_room)
+async def questionnaire_floor(message: types.Message):
     choice = await Choice.get(id=message.from_user.id)
     if message == ROOMS["room1"]:
         choice.room = ROOMS["room1"]
@@ -194,7 +186,7 @@ async def questionnaire_floor(message: types.Message, state: FSMContext):
     await States.questionnaire_mate.set()
 
 
-@dp.message_handler(lambda msg: msg.text in PETS_AND_FRIENDS, state=States.questionnaire_mate)
+@dp.message_handler(content_types=ContentType.ANY, state=States.questionnaire_mate)
 async def questionnaire_friends(message: types.Message, state: FSMContext):
     choice = await Choice.get(id=message.from_user.id)
     if message == PETS_AND_FRIENDS["pet_river1"]:
@@ -245,9 +237,24 @@ async def questionnaire_friends(message: types.Message, state: FSMContext):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-# SAMPLE Of "broadcast_message"
+# SAMPLE Of "broadcast_message" (NOTING PRESENCE)
 # tasks.broadcast_message("ЛЕКЦІЯ ПОЧАЛАСЯ, УАЛІВЕЦЬ ВСТАВАЙ!",
-#                         buttons=[{'text': "Я тут, не кричи", 'callback_data': "PRESENT09"}]).delay()
+#                         buttons=[{'text': "Я тут, не кричи", 'callback_data': "PRESENT09"}]).delay().apply_async()
+
+@dp.message_handler(state=None)
+async def presence_function(h):  # minute, hour, day, month
+    await asyncio.sleep(5)
+    # await asyncio.sleep(3600) # 1 HOUR
+    # await asyncio.sleep(36000) # 10 HOURS
+    # await asyncio.sleep(3600 * 24) # 24 HOURS
+    # await asyncio.sleep(3600 * 24 * 7) # WEEK
+    tasks.broadcast_message("ЛЕКЦІЯ ПОЧАЛАСЯ, УАЛІВЕЦЬ ВСТАВАЙ!",
+                                  buttons=[{'text': "Я тут, не кричи", 'callback_data': "PRESENT09"}])
+
+
+# a = tasks.broadcast_message("ЛЕКЦІЯ ПОЧАЛАСЯ, УАЛІВЕЦЬ ВСТАВАЙ!",
+#                             buttons=[{'text': "Я тут, не кричи", 'callback_data': "PRESENT09"}]).apply_async(
+#         args=[10, 10], countdown=10)
 
 if __name__ == '__main__':
     executor.start_polling(dp, on_startup=startup)
