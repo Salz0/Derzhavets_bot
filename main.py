@@ -242,7 +242,7 @@ async def questionnaire_friends(message: types.Message, state: FSMContext):
 #                         buttons=[{'text': "Я тут, не кричи", 'callback_data': "PRESENT09"}]).delay().apply_async()
 
 @dp.message_handler(state=None)
-async def presence_function(h):  # minute, hour, day, month
+async def presence_function(h):
     await asyncio.sleep(5)
     # await asyncio.sleep(3600) # 1 HOUR
     # await asyncio.sleep(36000) # 10 HOURS
