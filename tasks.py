@@ -74,7 +74,6 @@ async def broadcaster(text: str,
     count = 0
     try:
         async for user in User.all():
-            # if user.is_active and (await user.profile).is_registered:
             if await send_message(user.pk, text, buttons):
                 log.info(f'Sent a message to user [ID:{user.pk}] [USERNAME:{user.name}]')
                 count += 1
@@ -96,4 +95,4 @@ def broadcast_message(text: str,
     :return:
     """
     from main import dp
-    executor.start(dp, broadcaster(text, buttons))
+    executor.start(dp,  broadcaster(text, buttons))

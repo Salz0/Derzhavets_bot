@@ -23,7 +23,7 @@ mountain_msg = text(emojize("Обери собі компаньона!🙌"))
 mountain_top = text(emojize("На вершині 🌄"))
 
 # FOR FLOOR1 (МАЙБОРОДА)
-room1 = text(emojize("1️⃣"))
+room1 = text(emojize("1️⃣").encode("utf-8"))
 room2 = text(emojize("2️⃣"))
 room3 = text(emojize("3️⃣"))
 # FOR FLOOR2 (МАЙБОРОДА)
@@ -58,20 +58,23 @@ pet_river2 = text(emojize("Медведя!🐻"))
 # FOR MOUNTAIN (TREE) PET
 pet_tree1 = text(emojize("Білочку🐿"))
 pet_tree2 = text(emojize("Сову🦉"))
-#IGLOO PET
+# IGLOO PET
 pet_igloo1 = text(emojize("Чукчу!⛄"))
 pet_igloo2 = text(emojize("Привида!👻"))
 # CAVE PET
 pet_cave1 = text(emojize("Пані Самотність!🧘‍♂️"))
 pet_cave2 = text(emojize("Сніговика!⛄"))
 
-
-
 # SINGLE-PURPOSE MESSAGES:
 start_message = text(emojize("Привіт!👋"))
 registered_message = "Давно не бачилися!"
 have_a_nice_lecture = text(emojize("Продуктивної лекції тобі! 😉"))
 vote_thank_you = text(emojize("Дякую, твій голос враховано!⚖"))
+FINISHED = "Сподіваюся, тобі сподобалася лекція"
+LECTURE_START = "ЛЕКЦІЯ ПОЧАЛАСЯ, УАЛІВЕЦЬ ВСТАВАЙ!"
+NEW_VALUE = "Прохання проголосувати за/проти затвердження нової цінності: Будь Програмістом!"
+za = "За"
+proty = "Проти"
 
 # Q&A RESPONSES:
 Q_and_A_welcoming_message = text(emojize("Привіт, тут ти можеш задати стільки питань, скільки забажаєш\n"
@@ -81,12 +84,26 @@ exit_Q = "Вийти"
 Q_and_A_goodbye_message = text(emojize("Дякую.\nЗадані питання будуть доставленими 🧭"))
 # TEMPLATE = text(emojize())
 
+presence = "PRESENT09"
+voter = "FOR02937"
+against = "AGAINST02937"
 MESSAGES = {
 
     "start_message": start_message,
     "registered_message": registered_message,
     "have_a_nice_lecture": have_a_nice_lecture,
     "vote_thank_you": vote_thank_you,
+    "FINISHED": FINISHED,
+    "LECTURE_START": LECTURE_START,
+    "NEW_VALUE": NEW_VALUE,
+    "za": za,
+    "proty": proty,
+
+    # callback queries:
+    "presence": presence,
+    "voter": voter,
+    "against": against,
+
     # Q&A RESPONSES:
     "Q_and_A_welcoming_message": Q_and_A_welcoming_message,
     "Q_and_A_confirmation_message": Q_and_A_confirmation_message,
