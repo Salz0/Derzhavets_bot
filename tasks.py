@@ -1,13 +1,16 @@
 import asyncio
 from typing import Optional
+from main import os
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils import exceptions, executor
 
-from cel_costil import celery_app
 from models import User
 import database
 from loguru import logger as log
+from celery import Celery
+
+celery_app = Celery('tasks', broker=os.environ.get('AMQP_URL'), backend=os.environ.get('DATABASE_URL'))
 
 
 @celery_app.task()
@@ -95,4 +98,4 @@ def broadcast_message(text: str,
     :return:
     """
     from main import dp
-    executor.start(dp,  broadcaster(text, buttons))
+    executor.start(dp, broadcaster(text, buttons))
