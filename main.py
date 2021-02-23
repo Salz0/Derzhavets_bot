@@ -27,7 +27,7 @@ from aiogram.dispatcher import Dispatcher, FSMContext
 from datetime import datetime
 
 # ORM
-from models import User, Choice, Questions
+from models import User, Choice, Questions, Voting
 from database import init
 
 # Bot setup & logging
@@ -46,20 +46,35 @@ async def startup(dispatcher):
 
 
 # HANDLER FOR CATCHING CALLBACK QUERIES (FROM INLINE KEYBOARDS):
-@dp.callback_query_handler(lambda callback_query: True, lambda c: c.data == 'PRESENT09')
-async def process_callback_button1(callback_query: types.CallbackQuery):
+@dp.callback_query_handler(lambda callback_query: True, state=States.callback_data)  # lambda c: c.data == 'PRESENT09',
+async def process_callback_button1(callback_query: types.CallbackQuery, state: FSMContext):
     await bot.answer_callback_query(callback_query.id)
-    user = await User.get(id=callback_query.from_user.id, name=callback_query.from_user.get_mention())
-    user.presence = True
-    await user.save()
-    log.info(str("presence for {user} is set to 'True'").format(user=user))
-    await bot.send_message(callback_query.from_user.id, MESSAGES["have_a_nice_lecture"])
-    await asyncio.sleep(3600)  # average length of lecture (customizable)
-    user = await User.get(id=callback_query.from_user.id, name=callback_query.from_user.get_mention())
-    user.presence = False
-    await user.save()
-    log.info(str("presence for {user} is set to 'False'").format(user=user))
-    await bot.send_message(callback_query.from_user.id, 'FINISHED')
+    if callback_query == 'PRESENT09':
+        user = await User.get(id=callback_query.from_user.id, name=callback_query.from_user.get_mention())
+        user.presence = True
+        await user.save()
+        log.info(str("presence for {user} is set to 'True'").format(user=user))
+        await bot.send_message(callback_query.from_user.id, MESSAGES["have_a_nice_lecture"])
+        await asyncio.sleep(3600)  # average length of lecture (customizable)
+        user = await User.get(id=callback_query.from_user.id, name=callback_query.from_user.get_mention())
+        user.presence = False
+        await user.save()
+        log.info(str("presence for {user} is set to 'False'").format(user=user))
+        await bot.send_message(callback_query.from_user.id, 'FINISHED')
+        return state.finish
+
+    if callback_query == "AGAINST02937":
+        vote = await Voting.get_or_create(id=callback_query.from_user.id, name=callback_query.from_user.get_mention())
+        vote[0].vote1 = "Against"
+        await vote[0].save()
+        await bot.send_message(callback_query.from_user.id, MESSAGES["vote_thank_you"])
+        return state.finish
+    if callback_query == "FOR02937":
+        vote = await Voting.get_or_create(id=callback_query.from_user.id, name=callback_query.from_user.get_mention())
+        vote[0].vote1 = "For"
+        await vote[0].save()
+        await bot.send_message(callback_query.from_user.id, MESSAGES["vote_thank_you"])
+        return state.finish
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -237,20 +252,36 @@ async def questionnaire_friends(message: types.Message, state: FSMContext):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-# SAMPLE Of "broadcast_message" (NOTING PRESENCE)
-# tasks.broadcast_message("ЛЕКЦІЯ ПОЧАЛАСЯ, УАЛІВЕЦЬ ВСТАВАЙ!",
-#                         buttons=[{'text': "Я тут, не кричи", 'callback_data': "PRESENT09"}]).delay().apply_async()
-
-@dp.message_handler(state=None)
+# PRESENCE FUNCTION (customizable)
+@dp.message_handler(state=None)  # any message from any user must be sent for activation
 async def presence_function(h):
-    await asyncio.sleep(5)
+    # await asyncio.sleep(5)
     # await asyncio.sleep(3600) # 1 HOUR
     # await asyncio.sleep(36000) # 10 HOURS
     # await asyncio.sleep(3600 * 24) # 24 HOURS
     # await asyncio.sleep(3600 * 24 * 7) # WEEK
-    tasks.broadcast_message("ЛЕКЦІЯ ПОЧАЛАСЯ, УАЛІВЕЦЬ ВСТАВАЙ!",
+    await States.callback_data.set()
+    await tasks.broadcast_message("ЛЕКЦІЯ ПОЧАЛАСЯ, УАЛІВЕЦЬ ВСТАВАЙ!",
                                   buttons=[{'text': "Я тут, не кричи", 'callback_data': "PRESENT09"}])
 
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# INDIVIDUAL VOTING (customizable)
+@dp.message_handler(state=None)  # any message from any user must be sent for activation
+async def individual_voting(h):
+    # await asyncio.sleep(7)
+    # await asyncio.sleep(3600) # 1 HOUR
+    # await asyncio.sleep(36000) # 10 HOURS
+    # await asyncio.sleep(3600 * 24) # 24 HOURS
+    # await asyncio.sleep(3600 * 24 * 7) # WEEK
+    await States.callback_data.set()
+    await tasks.broadcast_message("Прохання проголосувати за/проти затвердження нової цінності: Будь Програмістом!",
+                                  buttons=[{"text": 'За', "callback_data": 'FOR02937'},
+                                           {"text": 'Проти', "callback_data": 'AGAINST02937'}])
+
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 # a = tasks.broadcast_message("ЛЕКЦІЯ ПОЧАЛАСЯ, УАЛІВЕЦЬ ВСТАВАЙ!",
 #                             buttons=[{'text': "Я тут, не кричи", 'callback_data': "PRESENT09"}]).apply_async(

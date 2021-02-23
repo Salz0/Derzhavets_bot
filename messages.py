@@ -71,6 +71,7 @@ pet_cave2 = text(emojize("Сніговика!⛄"))
 start_message = text(emojize("Привіт!👋"))
 registered_message = "Давно не бачилися!"
 have_a_nice_lecture = text(emojize("Продуктивної лекції тобі! 😉"))
+vote_thank_you = text(emojize("Дякую, твій голос враховано!⚖"))
 
 # Q&A RESPONSES:
 Q_and_A_welcoming_message = text(emojize("Привіт, тут ти можеш задати стільки питань, скільки забажаєш\n"
@@ -85,6 +86,7 @@ MESSAGES = {
     "start_message": start_message,
     "registered_message": registered_message,
     "have_a_nice_lecture": have_a_nice_lecture,
+    "vote_thank_you": vote_thank_you,
     # Q&A RESPONSES:
     "Q_and_A_welcoming_message": Q_and_A_welcoming_message,
     "Q_and_A_confirmation_message": Q_and_A_confirmation_message,

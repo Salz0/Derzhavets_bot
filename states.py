@@ -4,7 +4,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 class States(StatesGroup):
     present = State()
     writing_down_questions = State()
-
+    callback_data = State()
     # Questionnaire states
     questionnaire = State()
     questionnaire_floor = State()
