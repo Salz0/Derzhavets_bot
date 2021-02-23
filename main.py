@@ -52,8 +52,6 @@ async def startup(dispatcher):
     await init()
 
 
-# HANDLERS FOR CATCHING CALLBACK QUERIES (FROM INLINE KEYBOARDS):
-
 # PRESENCE CALLBACK HANDLER:
 @dp.callback_query_handler(lambda callback_query: True,
                            lambda c: c.data == MESSAGES["presence"])
