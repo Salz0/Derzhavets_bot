@@ -1,4 +1,4 @@
-# Imports
+# region Imports
 
 # Async
 import asyncio
@@ -35,9 +35,11 @@ from datetime import datetime
 from models import User, Choice, Questions, Voting
 from database import init
 
+# endregion ------------------------------------------------------------------------------------------------------------
+
 nest_asyncio.apply()
 
-# Bot setup & logging
+# region Bot setup & logging
 bot = Bot(token=os.environ.get('TELEGRAM_BOT_TOKEN'))
 dp = Dispatcher(bot, storage=MemoryStorage())
 dp.middleware.setup(LoggingMiddleware())
@@ -46,13 +48,13 @@ log.add("debug.log", format="{time} {level} {message}",
         level="DEBUG", rotation="10:00", compression="zip")
 
 
-# ----------------------------------------------------------------------------------------------------------------------
+# endregion ------------------------------------------------------------------------------------------------------------
 
 async def startup(dispatcher):
     await init()
 
 
-# PRESENCE CALLBACK HANDLER:
+# region PRESENCE CALLBACK HANDLER:
 @dp.callback_query_handler(lambda callback_query: True,
                            lambda c: c.data == MESSAGES["presence"])
 async def process_callback_button1(callback_query: types.CallbackQuery):
@@ -70,7 +72,8 @@ async def process_callback_button1(callback_query: types.CallbackQuery):
     await bot.send_message(callback_query.from_user.id, MESSAGES["FINISHED"])
 
 
-# VOTING CALLBACK HANDLER (VOTE1)
+# endregion ------------------------------------------------------------------------------------------------------------
+# region VOTING CALLBACK HANDLER (VOTE1)
 @dp.callback_query_handler(lambda callback_query: True, lambda c: c.data == MESSAGES["against"])
 async def process_callback_vote(callback_query: types.CallbackQuery):
     await bot.answer_callback_query(callback_query.id)
@@ -82,7 +85,8 @@ async def process_callback_vote(callback_query: types.CallbackQuery):
     await bot.send_message(callback_query.from_user.id, MESSAGES["vote_thank_you"])
 
 
-# VOTING CALLBACK HANDLER (VOTE1)
+# endregion ------------------------------------------------------------------------------------------------------------
+# region VOTING CALLBACK HANDLER (VOTE1)
 @dp.callback_query_handler(lambda callback_query: True, lambda c: c.data == MESSAGES["voter"])
 async def process_callback_vote(callback_query: types.CallbackQuery):
     await bot.answer_callback_query(callback_query.id)
@@ -94,9 +98,9 @@ async def process_callback_vote(callback_query: types.CallbackQuery):
     await bot.send_message(callback_query.from_user.id, MESSAGES["vote_thank_you"])
 
 
-# ----------------------------------------------------------------------------------------------------------------------
+# endregion ------------------------------------------------------------------------------------------------------------
 
-# STARTING THE BOT + REGISTERING THE USER TO "user":
+# region STARTING THE BOT + REGISTERING THE USER TO "user" table
 @dp.message_handler(commands=["start"], state=None)
 async def process_start_command(message: types.Message):
     user_id = message.from_user.id
@@ -110,9 +114,9 @@ async def process_start_command(message: types.Message):
         return await message.reply(MESSAGES["start_message"])
 
 
-# ----------------------------------------------------------------------------------------------------------------------
+# endregion ----------------------------------------------------------------------------------------------------------
 
-# USER Q&A:
+# region USER Q&A
 @dp.message_handler(commands=["Q&A"], state=None)
 async def process_start_command(message: types.Message):
     await States.writing_down_questions.set()
@@ -132,9 +136,9 @@ async def process_start_command(message: types.Message):
     await message.reply(MESSAGES["Q_and_A_confirmation_message"], reply_markup=kb.Q_and_A_keyboard)
 
 
-# ----------------------------------------------------------------------------------------------------------------------
+# endregion ------------------------------------------------------------------------------------------------------------
 
-# Questionnaire:
+# region Questionnaire
 @dp.message_handler(commands=['questionnaire'], state=None)
 async def questionnaire_start(message: types.Message):
     await States.questionnaire.set()
@@ -143,7 +147,7 @@ async def questionnaire_start(message: types.Message):
     await message.reply(MESSAGES["questionnaire_start"], reply_markup=kb.place_kb)
 
 
-# LEVEL 1 (CHOICE OF PLACE)
+# region LEVEL 1 (CHOICE OF PLACE)
 @dp.message_handler(content_types=ContentType.ANY, state=States.questionnaire)
 async def questionnaire_place(message: types.Message):
     choice = await Choice.get(id=message.from_user.id)
@@ -158,7 +162,8 @@ async def questionnaire_place(message: types.Message):
     await States.questionnaire_floor.set()
 
 
-# LEVEL 2 (FLOOR)
+# endregion ------------------------------------------------------------------------------------------------------------
+# region LEVEL 2 (FLOOR)
 @dp.message_handler(content_types=ContentType.ANY, state=States.questionnaire_floor)
 async def questionnaire_floor(message: types.Message):
     choice = await Choice.get(id=message.from_user.id)
@@ -179,7 +184,8 @@ async def questionnaire_floor(message: types.Message):
     await States.questionnaire_room.set()
 
 
-# LEVEL 3 (ROOMS)
+# endregion ------------------------------------------------------------------------------------------------------------
+# region LEVEL 3 (ROOMS)
 @dp.message_handler(content_types=ContentType.ANY, state=States.questionnaire_room)
 async def questionnaire_rooms(message: types.Message):
     choice = await Choice.get(id=message.from_user.id)
@@ -219,7 +225,8 @@ async def questionnaire_rooms(message: types.Message):
     await States.questionnaire_mate.set()
 
 
-# LEVEL 4 (FRIENDS)
+# endregion ------------------------------------------------------------------------------------------------------------
+# region LEVEL 4 (FRIENDS)
 @dp.message_handler(content_types=ContentType.ANY, state=States.questionnaire_mate)
 async def questionnaire_friends(message: types.Message, state: FSMContext):
     choice = await Choice.get(id=message.from_user.id)
@@ -269,9 +276,11 @@ async def questionnaire_friends(message: types.Message, state: FSMContext):
     await message.reply(MESSAGES["questionnaire_goodbye"])
 
 
-# ----------------------------------------------------------------------------------------------------------------------
+# endregion ------------------------------------------------------------------------------------------------------------
 
-# CHECKING PRESENCE OF USERS ON LECTURE (customizable)
+# endregion ------------------------------------------------------------------------------------------------------------
+
+# region CHECKING PRESENCE OF USERS ON LECTURE (customizable)
 @dp.message_handler(commands="start_presence")  # to activate: /start_presence
 async def presence_function(h):
     h = 7
@@ -286,9 +295,8 @@ async def presence_function(h):
                             buttons=[{'text': "Я тут, не кричи", 'callback_data': MESSAGES["presence"]}])
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-
-# INDIVIDUAL VOTING (customizable)
+# endregion
+# region INDIVIDUAL VOTING (customizable)
 @dp.message_handler(commands="start_voting")  # to activate /start_voting
 async def individual_voting(h):
     h = 7
@@ -303,7 +311,7 @@ async def individual_voting(h):
                                      {"text": MESSAGES["proty"], "callback_data": MESSAGES['against']}])
 
 
-# ----------------------------------------------------------------------------------------------------------------------
+# endregion ------------------------------------------------------------------------------------------------------------
 
 
 if __name__ == '__main__':
