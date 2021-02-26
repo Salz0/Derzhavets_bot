@@ -54,7 +54,7 @@ async def startup(dispatcher):
     await init()
 
 
-# region PRESENCE CALLBACK HANDLER:
+# region PRESENCE CALLBACK HANDLER
 @dp.callback_query_handler(lambda callback_query: True,
                            lambda c: c.data == MESSAGES["presence"])
 async def process_callback_button1(callback_query: types.CallbackQuery):

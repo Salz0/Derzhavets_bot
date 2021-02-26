@@ -32,19 +32,5 @@ async def init():
     await Tortoise.generate_schemas()
 
 
-# run_async is a helper function to run simple async Tortoise scripts.
-# run_async(init())
-
-# # Create instance by save
-# tournament = UserModel(name='New Tournament')
-# await tournament.save()
-#
-# # Or by .create()
-# await UserModel.create(name='Another Tournament')
-#
-# # Now search for a record
-# tour = await UserModel.filter(name__contains='Another').first()
-# print(tour.name)
-
 if __name__ == "__main__":
     run_async(init())
